@@ -2,203 +2,251 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TG Shop Mini App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Modern Mini App</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <style>
+        /* Переменные для тем */
         :root {
-            --main-bg: var(--tg-theme-bg-color, #ffffff);
-            --text-color: var(--tg-theme-text-color, #000000);
-            --hint-color: var(--tg-theme-hint-color, #999999);
-            --button-color: var(--tg-theme-button-color, #2481cc);
-            --button-text: var(--tg-theme-button-text-color, #ffffff);
-            --secondary-bg: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            --bg-color: #f5f5f7;
+            --card-bg: #ffffff;
+            --text-main: #1d1d1f;
+            --accent: #007aff;
+            --nav-bg: rgba(255, 255, 255, 0.8);
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-main: #ffffff;
+            --accent: #0a84ff;
+            --nav-bg: rgba(30, 30, 30, 0.8);
+        }
+
+        [data-theme="gold"] {
+            --bg-color: #1a1a1a;
+            --card-bg: #2c2c2c;
+            --text-main: #f5f5f5;
+            --accent: #d4af37;
+            --nav-bg: rgba(44, 44, 44, 0.9);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            font-family: sans-serif;
-            background-color: var(--main-bg);
-            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
             margin: 0;
             padding: 0;
-            padding-bottom: 70px; /* Отступ для меню */
+            overflow-x: hidden;
+            transition: background 0.3s ease;
         }
 
-        /* Шапка */
-        header {
-            padding: 15px;
-            text-align: center;
-            background: var(--secondary-bg);
+        /* Контейнер страниц с отступом под меню */
+        .content {
+            padding: 20px 15px 100px 15px;
         }
 
-        /* Страницы */
-        .page { display: none; padding: 15px; }
-        .active { display: block; }
+        .page { display: none; }
+        .page.active { display: block; animation: fadeIn 0.4s ease; }
 
-        /* Сетка товаров */
-        .products-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-        }
-
+        /* Карточки товаров */
         .product-card {
-            background: var(--secondary-bg);
-            padding: 10px;
-            border-radius: 12px;
-            text-align: center;
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
         }
 
-        .product-card img { width: 100%; border-radius: 8px; }
-        
-        .price { font-weight: bold; color: var(--button-color); margin: 10px 0; }
+        .product-card:active { transform: scale(0.97); }
 
-        button.add-btn {
-            background: var(--button-color);
-            color: var(--button-text);
-            border: none;
-            padding: 8px 15px;
-            border-radius: 8px;
+        .product-img {
             width: 100%;
+            height: 180px;
+            background: #eee;
+            border-radius: 15px;
+            object-fit: cover;
+            margin-bottom: 12px;
         }
 
-        /* Нижняя навигация */
-        .nav-bar {
+        .price-tag {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        /* Статичное нижнее меню */
+        .bottom-nav {
             position: fixed;
             bottom: 0;
-            width: 100%;
+            left: 0;
+            right: 0;
+            height: 75px;
+            background: var(--nav-bg);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
             display: flex;
-            background: var(--secondary-bg);
-            border-top: 1px solid #ccc;
-            height: 60px;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 0.5px solid rgba(0,0,0,0.1);
+            z-index: 1000;
+            padding-bottom: env(safe-area-inset-bottom);
         }
 
         .nav-item {
-            flex: 1;
-            text-align: center;
-            padding-top: 10px;
-            font-size: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #8e8e93;
+            font-size: 11px;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+
+        .nav-item.active { color: var(--accent); }
+
+        .nav-icon {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        /* Кнопки */
+        .btn-main {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            width: 100%;
             cursor: pointer;
         }
 
-        .nav-item.active-nav { color: var(--button-color); font-weight: bold; }
+        /* Переключатель тем в кабинете */
+        .theme-selector {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
 
-        /* Профиль */
-        .profile-info { margin-bottom: 20px; border-bottom: 1px solid var(--hint-color); padding-bottom: 10px; }
+        .theme-dot {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            box-shadow: 0 0 5px rgba(0,0,0,0.2);
+        }
     </style>
 </head>
-<body>
+<body data-theme="light">
 
-<header>
-    <h2 id="user-name">Shop Name</h2>
-</header>
-
-<div id="home" class="page active">
-    <h3>Наши товары</h3>
-    <div class="products-grid" id="products">
-        </div>
-</div>
-
-<div id="cart" class="page">
-    <h3>Ваша корзина</h3>
-    <div id="cart-items">Корзина пуста</div>
-    <hr>
-    <button class="add-btn" id="checkout-btn" style="display:none;">Оформить заказ</button>
-</div>
-
-<div id="profile" class="page">
-    <h3>Профиль</h3>
-    <div class="profile-info">
-        <p>ID: <span id="tg-id">Не определен</span></p>
-        <p>Имя: <span id="tg-name">Гость</span></p>
+<div class="content">
+    <div id="home" class="page active">
+        <h1 style="font-size: 28px; margin-bottom: 20px;">Магазин</h1>
+        <div id="product-list">
+            </div>
     </div>
-    <label>Адрес доставки:</label><br>
-    <input type="text" id="address" placeholder="Введите адрес" style="width:90%; padding:10px; margin-top:5px;">
-    <br><br>
-    <button class="add-btn" onclick="saveProfile()">Сохранить данные</button>
+
+    <div id="cart" class="page">
+        <h1>Корзина</h1>
+        <div id="cart-content"></div>
+    </div>
+
+    <div id="profile" class="page">
+        <h1>Профиль</h1>
+        <div class="product-card">
+            <p><strong>Telegram ID:</strong> <span id="user-id">1234567</span></p>
+            <p><strong>Имя:</strong> <span id="user-name">User</span></p>
+        </div>
+
+        <h3>Тема оформления</h3>
+        <div class="theme-selector">
+            <div class="theme-dot" style="background: #f5f5f7;" onclick="setTheme('light')"></div>
+            <div class="theme-dot" style="background: #121212;" onclick="setTheme('dark')"></div>
+            <div class="theme-dot" style="background: #d4af37;" onclick="setTheme('gold')"></div>
+        </div>
+    </div>
 </div>
 
-<div class="nav-bar">
-    <div class="nav-item active-nav" onclick="showPage('home', this)">Главная</div>
-    <div class="nav-item" onclick="showPage('cart', this)">Корзина (<span id="cart-count">0</span>)</div>
-    <div class="nav-item" onclick="showPage('profile', this)">Кабинет</div>
-</div>
+<nav class="bottom-nav">
+    <div class="nav-item active" onclick="navigate('home', this)">
+        <span class="nav-icon">🏠</span>
+        <span>Главная</span>
+    </div>
+    <div class="nav-item" onclick="navigate('cart', this)">
+        <span class="nav-icon">🛒</span>
+        <span>Корзина</span>
+    </div>
+    <div class="nav-item" onclick="navigate('profile', this)">
+        <span class="nav-icon">👤</span>
+        <span>Профиль</span>
+    </div>
+</nav>
 
 <script>
     const tg = window.Telegram.WebApp;
-    tg.expand(); // Развернуть на весь экран
+    tg.expand();
 
-    // Данные пользователя из ТГ
-    if (tg.initDataUnsafe.user) {
-        document.getElementById('tg-id').innerText = tg.initDataUnsafe.user.id;
-        document.getElementById('tg-name').innerText = tg.initDataUnsafe.user.first_name;
+    // Данные из ТГ
+    document.getElementById('user-id').innerText = tg.initDataUnsafe.user?.id || "Demo_ID";
+    document.getElementById('user-name').innerText = tg.initDataUnsafe.user?.first_name || "Guest";
+
+    // Навигация
+    function navigate(pageId, element) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        
+        document.getElementById(pageId).classList.add('active');
+        element.classList.add('active');
+        
+        tg.HapticFeedback.selectionChanged();
     }
 
-    // Пример данных (в будущем будут из БД)
+    // Темы
+    function setTheme(themeName) {
+        document.body.setAttribute('data-theme', themeName);
+        localStorage.setItem('theme', themeName);
+        tg.HapticFeedback.impactOccurred('light');
+    }
+
+    // Загрузка сохраненной темы
+    const savedTheme = localStorage.getItem('theme');
+    if(savedTheme) setTheme(savedTheme);
+
+    // Пример товаров
     const products = [
-        { id: 1, name: "Товар 1", price: 500, img: "https://via.placeholder.com/150" },
-        { id: 2, name: "Товар 2", price: 1200, img: "https://via.placeholder.com/150" },
-        { id: 3, name: "Товар 3", price: 750, img: "https://via.placeholder.com/150" },
-        { id: 4, name: "Товар 4", price: 3000, img: "https://via.placeholder.com/150" }
+        { id: 1, name: "iPhone 15 Pro", price: "120 000 ₽", img: "https://via.placeholder.com/300x200" },
+        { id: 2, name: "AirPods Pro 2", price: "25 000 ₽", img: "https://via.placeholder.com/300x200" }
     ];
 
-    let cart = [];
-
-    // Рендер товаров
-    function renderProducts() {
-        const grid = document.getElementById('products');
-        grid.innerHTML = products.map(p => `
-            <div class="product-card">
-                <img src="${p.img}">
-                <h4>${p.name}</h4>
-                <div class="price">${p.price} ₽</div>
-                <button class="add-btn" onclick="addToCart(${p.id})">В корзину</button>
+    const list = document.getElementById('product-list');
+    products.forEach(p => {
+        list.innerHTML += `
+            <div class="product-card animate__animated animate__fadeInUp">
+                <img src="${p.img}" class="product-img">
+                <div style="font-weight:600; font-size: 18px;">${p.name}</div>
+                <div class="price-tag">${p.price}</div>
+                <button class="btn-main" style="margin-top:10px" onclick="addToCart(${p.id})">Добавить</button>
             </div>
-        `).join('');
-    }
+        `;
+    });
 
-    // Переключение страниц
-    function showPage(pageId, el) {
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.getElementById(pageId).classList.add('active');
-        
-        document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active-nav'));
-        el.classList.add('active-nav');
-
-        if(pageId === 'cart') renderCart();
-    }
-
-    // Логика корзины
     function addToCart(id) {
-        const item = products.find(p => p.id === id);
-        cart.push(item);
-        updateCartStatus();
-        tg.HapticFeedback.impactOccurred('medium'); // Вибрация при клике
+        tg.MainButton.setText("ПЕРЕЙТИ К ОПЛАТЕ");
+        tg.MainButton.show();
     }
 
-    function updateCartStatus() {
-        document.getElementById('cart-count').innerText = cart.length;
-    }
+    tg.onEvent('mainButtonClicked', function(){
+        navigate('cart', document.querySelectorAll('.nav-item')[1]);
+    });
 
-    function renderCart() {
-        const container = document.getElementById('cart-items');
-        const btn = document.getElementById('checkout-btn');
-        if (cart.length === 0) {
-            container.innerHTML = "Корзина пуста";
-            btn.style.display = 'none';
-        } else {
-            container.innerHTML = cart.map(i => `<p>${i.name} - ${i.price} ₽</p>`).join('');
-            btn.style.display = 'block';
-        }
-    }
-
-    function saveProfile() {
-        const addr = document.getElementById('address').value;
-        alert("Адрес сохранен: " + addr);
-        // Тут будет запрос к вашему API для сохранения в БД
-    }
-
-    renderProducts();
 </script>
 </body>
 </html>
