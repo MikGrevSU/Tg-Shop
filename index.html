@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TG Shop Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --main-bg: var(--tg-theme-bg-color, #ffffff);
+            --text-color: var(--tg-theme-text-color, #000000);
+            --hint-color: var(--tg-theme-hint-color, #999999);
+            --button-color: var(--tg-theme-button-color, #2481cc);
+            --button-text: var(--tg-theme-button-text-color, #ffffff);
+            --secondary-bg: var(--tg-theme-secondary-bg-color, #f0f0f0);
+        }
+
+        body {
+            font-family: sans-serif;
+            background-color: var(--main-bg);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            padding-bottom: 70px; /* Отступ для меню */
+        }
+
+        /* Шапка */
+        header {
+            padding: 15px;
+            text-align: center;
+            background: var(--secondary-bg);
+        }
+
+        /* Страницы */
+        .page { display: none; padding: 15px; }
+        .active { display: block; }
+
+        /* Сетка товаров */
+        .products-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .product-card {
+            background: var(--secondary-bg);
+            padding: 10px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .product-card img { width: 100%; border-radius: 8px; }
+        
+        .price { font-weight: bold; color: var(--button-color); margin: 10px 0; }
+
+        button.add-btn {
+            background: var(--button-color);
+            color: var(--button-text);
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            width: 100%;
+        }
+
+        /* Нижняя навигация */
+        .nav-bar {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            display: flex;
+            background: var(--secondary-bg);
+            border-top: 1px solid #ccc;
+            height: 60px;
+        }
+
+        .nav-item {
+            flex: 1;
+            text-align: center;
+            padding-top: 10px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .nav-item.active-nav { color: var(--button-color); font-weight: bold; }
+
+        /* Профиль */
+        .profile-info { margin-bottom: 20px; border-bottom: 1px solid var(--hint-color); padding-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h2 id="user-name">Shop Name</h2>
+</header>
+
+<div id="home" class="page active">
+    <h3>Наши товары</h3>
+    <div class="products-grid" id="products">
+        </div>
+</div>
+
+<div id="cart" class="page">
+    <h3>Ваша корзина</h3>
+    <div id="cart-items">Корзина пуста</div>
+    <hr>
+    <button class="add-btn" id="checkout-btn" style="display:none;">Оформить заказ</button>
+</div>
+
+<div id="profile" class="page">
+    <h3>Профиль</h3>
+    <div class="profile-info">
+        <p>ID: <span id="tg-id">Не определен</span></p>
+        <p>Имя: <span id="tg-name">Гость</span></p>
+    </div>
+    <label>Адрес доставки:</label><br>
+    <input type="text" id="address" placeholder="Введите адрес" style="width:90%; padding:10px; margin-top:5px;">
+    <br><br>
+    <button class="add-btn" onclick="saveProfile()">Сохранить данные</button>
+</div>
+
+<div class="nav-bar">
+    <div class="nav-item active-nav" onclick="showPage('home', this)">Главная</div>
+    <div class="nav-item" onclick="showPage('cart', this)">Корзина (<span id="cart-count">0</span>)</div>
+    <div class="nav-item" onclick="showPage('profile', this)">Кабинет</div>
+</div>
+
+<script>
+    const tg = window.Telegram.WebApp;
+    tg.expand(); // Развернуть на весь экран
+
+    // Данные пользователя из ТГ
+    if (tg.initDataUnsafe.user) {
+        document.getElementById('tg-id').innerText = tg.initDataUnsafe.user.id;
+        document.getElementById('tg-name').innerText = tg.initDataUnsafe.user.first_name;
+    }
+
+    // Пример данных (в будущем будут из БД)
+    const products = [
+        { id: 1, name: "Товар 1", price: 500, img: "https://via.placeholder.com/150" },
+        { id: 2, name: "Товар 2", price: 1200, img: "https://via.placeholder.com/150" },
+        { id: 3, name: "Товар 3", price: 750, img: "https://via.placeholder.com/150" },
+        { id: 4, name: "Товар 4", price: 3000, img: "https://via.placeholder.com/150" }
+    ];
+
+    let cart = [];
+
+    // Рендер товаров
+    function renderProducts() {
+        const grid = document.getElementById('products');
+        grid.innerHTML = products.map(p => `
+            <div class="product-card">
+                <img src="${p.img}">
+                <h4>${p.name}</h4>
+                <div class="price">${p.price} ₽</div>
+                <button class="add-btn" onclick="addToCart(${p.id})">В корзину</button>
+            </div>
+        `).join('');
+    }
+
+    // Переключение страниц
+    function showPage(pageId, el) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById(pageId).classList.add('active');
+        
+        document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active-nav'));
+        el.classList.add('active-nav');
+
+        if(pageId === 'cart') renderCart();
+    }
+
+    // Логика корзины
+    function addToCart(id) {
+        const item = products.find(p => p.id === id);
+        cart.push(item);
+        updateCartStatus();
+        tg.HapticFeedback.impactOccurred('medium'); // Вибрация при клике
+    }
+
+    function updateCartStatus() {
+        document.getElementById('cart-count').innerText = cart.length;
+    }
+
+    function renderCart() {
+        const container = document.getElementById('cart-items');
+        const btn = document.getElementById('checkout-btn');
+        if (cart.length === 0) {
+            container.innerHTML = "Корзина пуста";
+            btn.style.display = 'none';
+        } else {
+            container.innerHTML = cart.map(i => `<p>${i.name} - ${i.price} ₽</p>`).join('');
+            btn.style.display = 'block';
+        }
+    }
+
+    function saveProfile() {
+        const addr = document.getElementById('address').value;
+        alert("Адрес сохранен: " + addr);
+        // Тут будет запрос к вашему API для сохранения в БД
+    }
+
+    renderProducts();
+</script>
+</body>
+</html>
